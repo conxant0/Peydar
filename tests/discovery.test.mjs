@@ -97,7 +97,7 @@ test('discovery deduplicates across queries and topics and enforces unique pairs
   assert.equal(db.prepare("SELECT count(*) AS n FROM papers WHERE id = 'shared'").get().n, 1);
   assert.equal(db.prepare("SELECT count(*) AS n FROM topic_papers WHERE paper_id = 'shared'").get().n, 2);
   assert.equal(db.prepare('SELECT count(*) AS n FROM topic_papers WHERE topic_id = ?').get(a.id).n, 3);
-  assert.throws(() => db.prepare("INSERT INTO topic_papers VALUES (?, 'shared', 'q', 'now')").run(a.id), /UNIQUE/);
+  assert.throws(() => db.prepare("INSERT INTO topic_papers (topic_id, paper_id, query, discovered_at) VALUES (?, 'shared', 'q', 'now')").run(a.id), /UNIQUE/);
   assert.throws(() => db.prepare("INSERT INTO papers (id, title, authors, url, updated_at) VALUES ('shared', 't', '[]', 'u', 'now')").run(), /UNIQUE/);
   assert.equal(listCandidates(db, a.id).find((paper) => paper.id === 'missing').abstract, null);
 

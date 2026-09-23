@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "db:init": "node --experimental-strip-types scripts/init-db.mjs",
-    "fixture:discovery": "node --experimental-strip-types scripts/discovery-fixture.mjs"
+    "fixture:discovery": "node --experimental-strip-types scripts/discovery-fixture.mjs",
+    "test-service": "node scripts/test-classifier.mjs"
   },
   "dependencies": {
     "better-sqlite3": "13.0.3",

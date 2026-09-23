@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-const migrations = ['001_topics.sql', '002_papers.sql'];
+const migrations = ['001_topics.sql', '002_papers.sql', '003_classifications.sql'];
 
 export function databasePath() {
   return path.resolve(/* turbopackIgnore: true */ process.env.DATABASE_PATH || 'data/paper-radar.sqlite');
@@ -24,9 +24,15 @@ export function openDatabase(file = databasePath()) {
   return db;
 }
 
+export const workingDatabasePath = () => path.resolve(/* turbopackIgnore: true */ 'data/paper-radar.sqlite');
+
 let singleton: ReturnType<typeof openDatabase> | undefined;
 
 export function getDatabase() {
+  // Test-service results must never land in the working database.
+  if (process.env.JEV_TEST_MODE === '1' && databasePath() === workingDatabasePath()) {
+    throw new Error('JEV_TEST_MODE=1 needs a separate DATABASE_PATH, e.g. data/verify.sqlite.');
+  }
   singleton ??= openDatabase();
   return singleton;
 }

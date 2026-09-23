@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3';
 import { deriveQueries } from './queries.ts';
 import { SearchError, type PaperMetadata, type SearchPapers } from './paper-search.ts';
+import type { Relevance } from './classifier.ts';
 import { getTopic } from './topics.ts';
 
 export const discoveryTarget = 50;
@@ -22,7 +23,13 @@ export type DiscoveryRun = {
   finishedAt: string | null;
 };
 
-export type Candidate = PaperMetadata & { query: string; discoveredAt: string };
+export type Candidate = PaperMetadata & {
+  query: string;
+  discoveredAt: string;
+  classification: { relevance: Relevance; confidence: number; model: string; testService: boolean; latencyMs: number; profileRevision: number } | null;
+  lastError: string | null;
+  claimed: boolean;
+};
 
 type Options = { sleep?: (ms: number) => Promise<void> };
 
@@ -95,8 +102,11 @@ export function latestRun(db: Database.Database, topicId: string): DiscoveryRun 
 }
 
 export function listCandidates(db: Database.Database, topicId: string): Candidate[] {
-  const rows = db.prepare(`SELECT p.*, tp.query, tp.discovered_at FROM topic_papers tp
-    JOIN papers p ON p.id = tp.paper_id WHERE tp.topic_id = ? ORDER BY tp.discovered_at, tp.rowid`).all(topicId) as Record<string, never>[];
+  const rows = db.prepare(`SELECT p.*, tp.query, tp.discovered_at, tp.last_error, tp.claimed_until > ? AS claimed,
+      c.relevance, c.confidence, c.model, c.test_service, c.latency_ms, c.profile_revision
+    FROM topic_papers tp JOIN papers p ON p.id = tp.paper_id
+    LEFT JOIN classifications c ON c.topic_id = tp.topic_id AND c.paper_id = tp.paper_id
+    WHERE tp.topic_id = ? ORDER BY tp.discovered_at, tp.rowid`).all(new Date().toISOString(), topicId) as Record<string, never>[];
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
@@ -109,5 +119,9 @@ export function listCandidates(db: Database.Database, topicId: string): Candidat
     citationCount: row.citation_count,
     query: row.query,
     discoveredAt: row.discovered_at,
+    classification: row.relevance ? { relevance: row.relevance, confidence: row.confidence, model: row.model,
+      testService: !!row.test_service, latencyMs: row.latency_ms, profileRevision: row.profile_revision } : null,
+    lastError: row.last_error,
+    claimed: !!row.claimed,
   }));
 }

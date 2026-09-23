@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getDatabase } from '../lib/db.ts';
+import { classifyNext } from '../lib/classification.ts';
+import { createClassifier, testMode } from '../lib/classifier.ts';
 import { discoverPapers } from '../lib/discovery.ts';
 import { createSearch } from '../lib/paper-search.ts';
 import { createTopic, deleteTopic, inputFrom, updateTopic, ValidationError, type TopicInput } from '../lib/topics.ts';
@@ -40,4 +42,11 @@ export async function deleteTopicAction(id: string, _formData: FormData) {
 export async function discoverAction(id: string, _formData: FormData) {
   if (!await discoverPapers(getDatabase(), id, createSearch())) redirect('/');
   revalidatePath(`/topics/${id}`);
+}
+
+export async function classifyNextAction(id: string, exclude: string[]) {
+  const skip = Array.isArray(exclude) ? exclude.filter((item): item is string => typeof item === 'string') : [];
+  const outcome = await classifyNext(getDatabase(), id, createClassifier(), { exclude: skip, testService: testMode() });
+  if (outcome.status !== 'none') revalidatePath(`/topics/${id}`);
+  return outcome;
 }

@@ -1,6 +1,6 @@
 # Paper Radar
 
-Local research topics show a deterministic query preview and can discover candidate papers from OpenAlex or Semantic Scholar. Classification comes in a later part.
+Local research topics show a deterministic query preview, discover candidate papers from OpenAlex or Semantic Scholar, and classify them through a simple-jev service (or a local test service).
 
 ## Start
 
@@ -62,6 +62,35 @@ unset DATABASE_PATH
 ```
 
 Fixture links point to `example.org` and are not real papers. To start over, stop the app and delete `data/verify.sqlite`.
+
+## Classification
+
+Open a topic and select **Classify N unfinished papers**. The Next.js server sends each paper that has an abstract, one at a time, to `JEV_BASE_URL/v1/classifier`. Each request carries the configured `JEV_MODEL`, the research profile and paper as `state`, and one `choice` question whose criteria are `relevant`, `maybe`, `irrelevant` in that order. The answer's `choice` and `confidence` are validated: only those three labels and a finite confidence from 0 to 1 are accepted. Each result is saved as soon as it arrives. The saved result includes the profile revision, the model the service reported, the prompt version (`relevance-choice-v1`), whether it came from the test service, and the request time measured on the Mac. Papers already classified for the topic are never sent again. Papers without abstracts are never sent.
+
+The page shows progress while it works and saves each paper before starting the next. **Stop after this paper**, a page refresh, or stopping the app all interrupt the run. Completed results stay, and the button then offers the unfinished papers. A paper whose request fails shows the error and keeps no result. It is skipped for the rest of that run and retried the next time you press the button. An unreachable, overloaded (HTTP 429), failing (5xx), or timed-out service stops the run. `JEV_TIMEOUT_MS` sets the timeout, 60 s by default. A paper being sent is claimed until the timeout plus 30 s. If the app crashes mid-request, the claim expires and the paper becomes retryable.
+
+### Test service
+
+`npm run test-service` starts a fake simple-jev on <http://127.0.0.1:8765> with `/health`, `/v1/classifier`, `/stats`, and `/control`. It only answers model `paper-radar-test`. The same title always gets the same answer, and the service prints each answer it gives. `GET /stats` shows the total request count and requests per title. `POST /control` changes behavior until you change it back:
+
+```sh
+curl -X POST 'http://127.0.0.1:8765/control?delayMs=3000'        # delay every answer by 3 s
+curl -X POST 'http://127.0.0.1:8765/control?scenario=bad-label'  # also: invalid-json, bad-confidence, http-500, unknown-model
+curl -X POST 'http://127.0.0.1:8765/control?scenario=ok&delayMs=0'
+curl http://127.0.0.1:8765/stats
+```
+
+`JEV_TEST_MODE=1` shows a banner on every page and marks each result as a test result. The app refuses to start in test mode against `data/paper-radar.sqlite`, so fake labels cannot enter the working database. Shell variables override `.env`, so the commands below leave your real settings untouched.
+
+```sh
+# Terminal 1
+npm run test-service
+
+# Terminal 2 (stop any running `npm run dev` first; only one dev server can run here)
+export DATABASE_PATH=data/verify.sqlite
+npm run fixture:discovery -- setup   # skip if data/verify.sqlite already has the fixture topics
+JEV_TEST_MODE=1 JEV_BASE_URL=http://127.0.0.1:8765 JEV_MODEL=paper-radar-test npm run dev
+```
 
 ## Back up and restore
 

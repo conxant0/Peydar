@@ -1,10 +1,13 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import DeleteButton from '../../delete-button.tsx';
+import ClassifyButton from '../../classify-button.tsx';
 import DiscoverButton from '../../discover-button.tsx';
-import { deleteTopicAction, discoverAction } from '../../actions.ts';
+import { classifyNextAction, deleteTopicAction, discoverAction } from '../../actions.ts';
+import { classificationProgress } from '../../../lib/classification.ts';
+import { testMode } from '../../../lib/classifier.ts';
 import { getDatabase } from '../../../lib/db.ts';
-import { latestRun, listCandidates, type DiscoveryRun } from '../../../lib/discovery.ts';
+import { latestRun, listCandidates, type Candidate, type DiscoveryRun } from '../../../lib/discovery.ts';
 import { paperSource, sources } from '../../../lib/paper-search.ts';
 import { getTopic } from '../../../lib/topics.ts';
 import { deriveQueries } from '../../../lib/queries.ts';
@@ -19,6 +22,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
   const run = latestRun(db, id);
   const candidates = listCandidates(db, id);
   const source = sources[paperSource()].name;
+  const progress = classificationProgress(db, id);
   return <div className="narrow"><Link className="back" href="/">← All topics</Link>
     <p className="eyebrow">Research profile</p><h1>{topic.name}</h1>
     <section className="detail"><h2>Research question</h2><p>{topic.question}</p></section>
@@ -34,13 +38,17 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
       <p className="muted">Searches {source} with the queries above and keeps up to 50 new papers per run.</p>
       <DiscoverButton again={!!run} source={source} action={discoverAction.bind(null, id)} />
       {run && <RunSummary run={run} total={candidates.length} />}</section>
+    <section className="detail"><h2>Classification</h2>
+      <p className="muted">Sends each paper with an abstract to {testMode() ? 'the local test service' : 'the classifier'} one at a time. Each result is saved as it arrives; classified papers are not sent again.</p>
+      <p>{progress.classified} of {progress.total - progress.missingAbstract} classified · {progress.pending} pending · {progress.failed} failed · {progress.missingAbstract} missing abstract</p>
+      <ClassifyButton unfinished={progress.pending + progress.failed} action={classifyNextAction.bind(null, id)} /></section>
     <section className="candidates"><h2>Candidates ({candidates.length})</h2>
       {candidates.length ? <ul className="paper-list">{candidates.map((paper) => <li key={paper.id} className="paper-card">
         <a className="paper-title" href={paper.url} target="_blank" rel="noreferrer">{paper.title}</a>
         <p className="muted">{[paper.authors.length > 5 ? `${paper.authors.slice(0, 5).join(', ')} et al.` : paper.authors.join(', ') || 'Unknown authors',
           paper.year ?? paper.publicationDate, paper.venue, paper.citationCount !== null && `${paper.citationCount} citations`].filter(Boolean).join(' · ')}</p>
-        <p><span className={paper.abstract ? 'status' : 'status warn'}>{paper.abstract ? 'Awaiting classification' : 'Unclassified: missing abstract'}</span>
-          <span className="muted"> Found by “{paper.query}”</span></p>
+        <p><PaperStatus paper={paper} /><span className="muted"> Found by “{paper.query}”</span></p>
+        {!paper.classification && paper.lastError && <p className="error">Last attempt failed: {paper.lastError}</p>}
         {paper.abstract && <details><summary>Abstract</summary><p className="preserve">{paper.abstract}</p></details>}
       </li>)}</ul> : <p className="muted">No candidates yet.</p>}</section>
   </div>;
@@ -62,4 +70,16 @@ function RunSummary({ run, total }: { run: DiscoveryRun; total: number }) {
         <td>{{ pending: 'Not run', done: 'Done', failed: 'Failed', skipped: 'Skipped' }[query.status]}</td>
         <td>{query.returned ?? '—'}</td><td>{query.added ?? '—'}</td></tr>)}</tbody></table>
   </div>;
+}
+
+function PaperStatus({ paper }: { paper: Candidate }) {
+  const result = paper.classification;
+  if (result) {
+    return <span className={`status ${result.relevance}`} title={`${result.model}, ${result.latencyMs} ms`}>
+      {{ relevant: 'Relevant', maybe: 'Maybe', irrelevant: 'Irrelevant' }[result.relevance]} · {result.confidence.toFixed(2)}
+      {result.testService && ' · test result'}</span>;
+  }
+  if (!paper.abstract) return <span className="status warn">Unclassified: missing abstract</span>;
+  if (paper.claimed) return <span className="status">Classifying…</span>;
+  return <span className="status warn">{paper.lastError ? 'Unclassified: failed' : 'Unclassified: pending'}</span>;
 }
