@@ -314,10 +314,12 @@ changed during evaluation without changing the product contract.
 
 ### Connection and API contract
 
-The user is setting up simple-jev on the Windows PC and will provide its
-reachable base URL when ready. Application development must not depend on
-the PC being available. Configure the connection with
-`CLASSIFIER_BASE_URL` and the served model identifier with `CLASSIFIER_MODEL`.
+The user has set up simple-jev on the Windows PC. Its HTTP health endpoint
+has reported ready with model `Qwen/Qwen3.5-0.8B`; full classification
+integration still requires verification. Application development must not
+depend on the PC remaining available. Configure the connection in the
+Git-ignored `.env` with `JEV_BASE_URL` and the served model identifier with
+`JEV_MODEL`; provide placeholder connection details in `.env.example`.
 Changing the PC address must not require application code changes.
 
 `ClassificationInput` and `ClassificationResult` are the application's
@@ -341,7 +343,7 @@ The web application must treat the classifier as an external service and
 must not contain model-specific inference logic. Requests originate from
 the Next.js server.
 
-Before the PC is ready, use an explicitly selected test service returning
+When verifying integration without the PC, use an explicitly selected test service returning
 predictable responses to verify integration and recovery. Clearly mark
 test results, keep them separate from real results, and exclude them from
 model evaluation. Never silently substitute test results during an outage.

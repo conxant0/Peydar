@@ -1,0 +1,25 @@
+# Local configuration; keep the shareable template.
+.env
+.env.*
+!.env.example
+
+# Dependencies and generated application files.
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Local databases, sidecars, backups, and evaluation exports.
+data/
+backups/
+exports/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+
+.DS_Store
+
+/docs-hidden
