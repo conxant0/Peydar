@@ -51,7 +51,7 @@ test('topics persist, validate, isolate, and revise only for substantive edits',
 
     db = openDatabase(file);
     assert.equal(listTopics(db).length, 1);
-    assert.equal(db.pragma('user_version', { simple: true }), 3);
+    assert.equal(db.pragma('user_version', { simple: true }), 4);
     db.close();
     const restored = path.join(dir, 'restored.sqlite');
     copyFileSync(file, restored);

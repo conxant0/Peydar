@@ -92,6 +92,24 @@ npm run fixture:discovery -- setup   # skip if data/verify.sqlite already has th
 JEV_TEST_MODE=1 JEV_BASE_URL=http://127.0.0.1:8765 JEV_MODEL=paper-radar-test npm run dev
 ```
 
+## Browsing and saving
+
+The topic page lists papers in two groups. **Classified** papers are ordered Relevant, Maybe, then Irrelevant, with higher confidence first; ties keep discovery order, so a refresh never reshuffles them. **Unclassified** papers (pending, failed, or missing an abstract) are listed separately and never counted as Irrelevant. The filter links show All, Relevant, Maybe, Irrelevant, or Saved; relevance filters include labels marked outdated. A label is outdated when the question, description, interests, or non-interests changed after it was produced. Renaming a topic does not make labels outdated.
+
+**Save** keeps a paper for that topic only. The same paper in another topic keeps its own saved state. Saves survive restarts, reclassification, and profile edits. The topic list shows retrieved, scanned (papers with a stored label, including outdated ones), Relevant, Maybe, and saved counts. Browsing and saving never contact the classifier, so they work while it is offline.
+
+### Verification fixture
+
+```sh
+export DATABASE_PATH=data/verify.sqlite
+npm run fixture:browsing -- setup   # Browsing A: Relevant 0.90, Relevant 0.60, Maybe 0.99, Irrelevant 0.99, one without an abstract
+npm run dev                         # Browsing B shares the Relevant 0.60 paper with A
+npm run fixture:browsing -- check   # read-only: counts, order, and saved papers for both topics
+unset DATABASE_PATH
+```
+
+The fixture labels are marked as test results. Running `setup` again keeps existing saves.
+
 ## Back up and restore
 
 Stop the app before copying its database. Run these commands from the project directory:

@@ -70,3 +70,14 @@ summary { cursor: pointer; color: #146b60; font-weight: 600; }
 .status.relevant { background: #dcf1e4; color: #1d5e33; }
 .status.maybe { background: #fdf0e0; color: #8a4b08; }
 .status.irrelevant { background: #eceff1; color: #45525a; }
+.filters { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.filter { border: 1px solid #9baea9; border-radius: 999px; padding: .3rem .8rem; text-decoration: none; font-weight: 600; background: white; }
+.filter[aria-current="page"] { background: #11685c; border-color: #11685c; color: white; }
+h3 { font-size: 1rem; margin: 1.5rem 0 .6rem; }
+.status + .status { margin-left: .4rem; }
+.status.saved { background: #e3ecfb; color: #234a86; }
+.abstract-preview { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.paper-card:has(details[open]) .abstract-preview { display: none; }
+.card-actions { display: flex; gap: 1rem; align-items: center; margin-top: .7rem; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.topic-counts { font-size: .9rem; color: #33443f; }

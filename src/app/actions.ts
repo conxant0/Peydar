@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { setSaved } from '../lib/browsing.ts';
 import { getDatabase } from '../lib/db.ts';
 import { classifyNext } from '../lib/classification.ts';
 import { createClassifier, testMode } from '../lib/classifier.ts';
@@ -49,4 +50,10 @@ export async function classifyNextAction(id: string, exclude: string[]) {
   const outcome = await classifyNext(getDatabase(), id, createClassifier(), { exclude: skip, testService: testMode() });
   if (outcome.status !== 'none') revalidatePath(`/topics/${id}`);
   return outcome;
+}
+
+export async function saveAction(id: string, paperId: string, saved: boolean, _formData: FormData) {
+  setSaved(getDatabase(), id, paperId, saved);
+  revalidatePath(`/topics/${id}`);
+  revalidatePath('/');
 }

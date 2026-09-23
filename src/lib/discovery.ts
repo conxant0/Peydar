@@ -26,9 +26,10 @@ export type DiscoveryRun = {
 export type Candidate = PaperMetadata & {
   query: string;
   discoveredAt: string;
-  classification: { relevance: Relevance; confidence: number; model: string; testService: boolean; latencyMs: number; profileRevision: number } | null;
+  classification: { relevance: Relevance; confidence: number; model: string; testService: boolean; latencyMs: number; profileRevision: number; outdated: boolean } | null;
   lastError: string | null;
   claimed: boolean;
+  savedAt: string | null;
 };
 
 type Options = { sleep?: (ms: number) => Promise<void> };
@@ -101,12 +102,15 @@ export function latestRun(db: Database.Database, topicId: string): DiscoveryRun 
   return row ? { id: row.id, queries: JSON.parse(row.queries), newPapers: row.new_papers, startedAt: row.started_at, finishedAt: row.finished_at } : null;
 }
 
+// Classified papers first: Relevant, Maybe, Irrelevant, higher confidence first, then discovery order as a stable tie-break.
 export function listCandidates(db: Database.Database, topicId: string): Candidate[] {
-  const rows = db.prepare(`SELECT p.*, tp.query, tp.discovered_at, tp.last_error, tp.claimed_until > ? AS claimed,
-      c.relevance, c.confidence, c.model, c.test_service, c.latency_ms, c.profile_revision
-    FROM topic_papers tp JOIN papers p ON p.id = tp.paper_id
+  const rows = db.prepare(`SELECT p.*, tp.query, tp.discovered_at, tp.last_error, tp.claimed_until > ? AS claimed, tp.saved_at,
+      c.relevance, c.confidence, c.model, c.test_service, c.latency_ms, c.profile_revision, c.profile_revision < t.profile_revision AS outdated
+    FROM topic_papers tp JOIN papers p ON p.id = tp.paper_id JOIN research_topics t ON t.id = tp.topic_id
     LEFT JOIN classifications c ON c.topic_id = tp.topic_id AND c.paper_id = tp.paper_id
-    WHERE tp.topic_id = ? ORDER BY tp.discovered_at, tp.rowid`).all(new Date().toISOString(), topicId) as Record<string, never>[];
+    WHERE tp.topic_id = ?
+    ORDER BY c.paper_id IS NULL, CASE c.relevance WHEN 'relevant' THEN 0 WHEN 'maybe' THEN 1 ELSE 2 END,
+      c.confidence DESC, tp.discovered_at, tp.rowid`).all(new Date().toISOString(), topicId) as Record<string, never>[];
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
@@ -120,8 +124,9 @@ export function listCandidates(db: Database.Database, topicId: string): Candidat
     query: row.query,
     discoveredAt: row.discovered_at,
     classification: row.relevance ? { relevance: row.relevance, confidence: row.confidence, model: row.model,
-      testService: !!row.test_service, latencyMs: row.latency_ms, profileRevision: row.profile_revision } : null,
+      testService: !!row.test_service, latencyMs: row.latency_ms, profileRevision: row.profile_revision, outdated: !!row.outdated } : null,
     lastError: row.last_error,
     claimed: !!row.claimed,
+    savedAt: row.saved_at,
   }));
 }

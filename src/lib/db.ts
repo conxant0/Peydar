@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-const migrations = ['001_topics.sql', '002_papers.sql', '003_classifications.sql'];
+const migrations = ['001_topics.sql', '002_papers.sql', '003_classifications.sql', '004_saves.sql'];
 
 export function databasePath() {
   return path.resolve(/* turbopackIgnore: true */ process.env.DATABASE_PATH || 'data/paper-radar.sqlite');
