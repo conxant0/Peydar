@@ -478,7 +478,7 @@ check passing is not user approval. Record the date and evidence of each approva
 | Part | Developer checks | User verification | Approval/date |
 | --- | --- | --- | --- |
 | 1 | Passed `npm test`, `npm run build`, and local page checks; stopped-database restore checked in a temporary path | User requested that Part 1 be marked completed and verified in chat; individual manual step results were not recorded | Approved 2026-09-23 |
-| 2 | Not started | Not performed | Pending |
+| 2 | Passed `npm test`, `npm run typecheck`, `npm run build`, and local HTTP query-preview check against a separate temporary database; expected six queries rendered in order | Not performed | Pending |
 | 3 | Not started | Not performed | Pending |
 | 4 | Not started | Not performed | Pending |
 | 5 | Not started | Not performed | Pending |
