@@ -1,7 +1,7 @@
 # Paper Radar --- Product Requirements Document
 
 **Status:** MVP Source of Truth\
-**Version:** 1.1\
+**Version:** 1.2 (OpenAlex added as a paper source)\
 **Target:** Incremental personal MVP; no hard weekend time budget\
 **Primary user:** Personal research use
 
@@ -12,13 +12,13 @@ papers relevant to a specific research topic.
 
 The user defines a research profile. Paper Radar deterministically
 derives search queries from that profile, retrieves candidate papers
-from Semantic Scholar, and sends each candidate's title and abstract to
+from OpenAlex or Semantic Scholar, and sends each candidate's title and abstract to
 a locally hosted classifier. The classifier labels each paper as
 **Relevant**, **Maybe**, or **Irrelevant**, with a confidence score.
 
 The core pipeline is:
 
-`Research Profile → Query Derivation → Semantic Scholar → Candidate Papers → Local Classifier → Filtered Dashboard`
+`Research Profile → Query Derivation → OpenAlex / Semantic Scholar → Candidate Papers → Local Classifier → Filtered Dashboard`
 
 The MVP is intentionally focused on **retrieval + classification**, not
 paper summarization or question answering.
@@ -28,7 +28,7 @@ paper summarization or question answering.
 The MVP must:
 
 1.  Let the user define and persist multiple research topics.
-2.  Discover candidate papers using Semantic Scholar.
+2.  Discover candidate papers using OpenAlex or Semantic Scholar.
 3.  Automatically derive search queries from the research profile
     without requiring an LLM.
 4.  Classify candidate papers using a locally hosted open-source model.
@@ -70,7 +70,8 @@ These may be considered after the MVP.
     -   non-interests
 4.  Paper Radar derives search queries deterministically from the
     profile.
-5.  Paper Radar searches Semantic Scholar.
+5.  Paper Radar searches the configured paper source (OpenAlex or
+    Semantic Scholar).
 6.  Candidate papers are deduplicated and persisted with their topic
     associations before classification begins.
 7.  Each candidate with an abstract has its title and abstract sent to
@@ -138,11 +139,22 @@ has succeeded and passed validation. Failed attempts preserve old results.
 
 ### Source
 
-**Semantic Scholar API** is the sole academic paper source for MVP.
+The MVP supports two academic paper sources. One configured source is
+used at a time (`PAPER_SOURCE`):
+
+-   **OpenAlex API** (default). Uses OpenAlex semantic search. Added
+    because Semantic Scholar's shared public rate limit rejected every
+    unauthenticated request during development. A free OpenAlex API key
+    raises the daily usage budget.
+-   **Semantic Scholar API**. Uses relevance search. An API key is
+    effectively required for reliable access.
+
+Only these two sources are in scope; combining results from both in one
+run is not.
 
 The application should retrieve useful available metadata such as:
 
--   Semantic Scholar paper ID
+-   source paper ID (OpenAlex work ID or Semantic Scholar paper ID)
 -   title
 -   abstract
 -   authors
@@ -192,10 +204,10 @@ dependency-aware context
 
 ### Retrieval requirements
 
--   Run multiple derived queries against Semantic Scholar.
+-   Run multiple derived queries against the configured paper source.
 -   Show the derived queries before the user starts discovery.
 -   Merge results.
--   Deduplicate using Semantic Scholar paper ID.
+-   Deduplicate using the source paper ID.
 -   Persist candidates and their topic associations independently of
     classification, including candidates missing abstracts.
 -   Do not classify a paper twice for the same research topic unless
@@ -464,10 +476,11 @@ Stores the user's research profile.
 
 ### Paper
 
-Stores normalized Semantic Scholar paper metadata.
+Stores normalized paper metadata from the configured source.
 
 A paper should exist once globally in the database when identified by
-the same Semantic Scholar paper ID.
+the same source paper ID. OpenAlex and Semantic Scholar IDs differ, so
+switching sources can store the same paper twice.
 
 ### TopicPaper
 
@@ -583,13 +596,13 @@ effective.
 
 The application should handle at minimum:
 
--   Semantic Scholar API failure
--   Semantic Scholar rate limiting
+-   paper source (OpenAlex or Semantic Scholar) API failure
+-   paper source rate limiting
 -   local classifier unavailable
 -   classifier timeout/failure
 -   invalid classifier response or unsupported input length
 -   missing paper abstracts
--   duplicate Semantic Scholar results
+-   duplicate search results
 -   empty search results
 
 Failures should not silently discard previously retrieved or classified
@@ -610,7 +623,7 @@ The MVP is complete when all of the following are true:
 -   A topic supports question, description, interests, and
     non-interests.
 -   Search queries are derived without a generative LLM.
--   Candidate papers are retrieved from Semantic Scholar.
+-   Candidate papers are retrieved from OpenAlex or Semantic Scholar.
 -   Duplicate candidates are removed.
 -   Papers with abstracts can be sent to the PC-hosted classifier.
 -   The classifier returns Relevant, Maybe, or Irrelevant plus
@@ -639,7 +652,7 @@ The MVP is complete when all of the following are true:
 
 ## 14. Implementation Principles
 
-1.  **Keep retrieval and classification separate.** Semantic Scholar
+1.  **Keep retrieval and classification separate.** The paper source
     retrieves candidates; the local model judges relevance.
 2.  **Keep the classifier replaceable.** The web application depends on
     the API contract, not simple-jev or a specific model.
@@ -695,7 +708,7 @@ until the user personally verifies it and approves proceeding.
 | --- | --- | --- |
 | 1. Local topics and storage | Next.js, SQLite migrations, topic create/edit/delete, backup/restore instructions | Create two topics, restart, verify all fields persist, edit and delete, and verify a backup can be restored. |
 | 2. Query preview | Deterministic queries visible before discovery | Identical profiles produce identical queries; meaningful input changes produce understandable changes. |
-| 3. Real discovery | Semantic Scholar retrieval, deduplication, persisted candidates and topic associations | Open original links, repeat discovery without duplicates, restart without losing candidates, and inspect missing-abstract handling. |
+| 3. Real discovery | OpenAlex or Semantic Scholar retrieval, deduplication, persisted candidates and topic associations | Open original links, repeat discovery without duplicates, restart without losing candidates, and inspect missing-abstract handling. |
 | 4. Classification plumbing | HTTP adapter and clearly marked test service | Persist results, skip completed papers on repeat runs, interrupt processing, and retry unfinished work without losing progress. |
 | 5. Browsing and saving | Filters, ordering, paper cards, topic counts, save/unsave | Check known results and counts, verify saves remain independent across topics, and browse while inference is offline. |
 | 6. Edits and recovery | Outdated labels, explicit reclassification, complete failure handling | Edit classification inputs, observe outdated results, verify a rename does not invalidate them, and reproduce rate limits, empty results, timeouts, and invalid responses without losing work. |

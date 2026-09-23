@@ -51,3 +51,18 @@ textarea { resize: vertical; }
 .danger { background: white; color: #a52f2f; border-color: #c88c8c; }
 .danger:hover { background: #fff2f2; }
 @media (max-width: 600px) { .page-heading { align-items: flex-start; flex-direction: column; } .header-note { display: none; } main.container { padding-top: 2rem; } }
+.run { margin-top: 1rem; }
+.run p { margin: 0 0 .7rem; }
+.notice { background: #fdf6e6; border: 1px solid #ecd49a; border-radius: 8px; padding: .6rem .8rem; }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th, td { text-align: left; padding: .45rem .4rem; border-top: 1px solid #dce5e2; vertical-align: top; }
+td .error { display: block; }
+.candidates { margin-top: 2rem; }
+.paper-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .8rem; }
+.paper-card { background: white; border: 1px solid #dce5e2; border-radius: 12px; padding: 1rem 1.2rem; }
+.paper-card p { margin: .35rem 0 0; }
+.paper-title { font-weight: 700; }
+.status { display: inline-block; font-size: .8rem; font-weight: 700; border-radius: 999px; padding: .1rem .55rem; background: #e8f1ef; color: #0f5a50; }
+.status.warn { background: #fdf0e0; color: #8a4b08; }
+details { margin-top: .5rem; }
+summary { cursor: pointer; color: #146b60; font-weight: 600; }

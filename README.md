@@ -1,6 +1,6 @@
 # Paper Radar
 
-Local research topics now show a deterministic query preview. Discovery and classification come in later parts after personal verification.
+Local research topics show a deterministic query preview and can discover candidate papers from OpenAlex or Semantic Scholar. Classification comes in a later part.
 
 ## Start
 
@@ -12,7 +12,7 @@ npm run db:init
 npm run dev
 ```
 
-Open <http://127.0.0.1:3001>. Port 3000 is occupied by another local app on this Mac. Paper Radar creates `data/paper-radar.sqlite` and applies migrations automatically; `db:init` lets you do that explicitly. No inference PC is needed for the query preview. Set `DATABASE_PATH` to use another SQLite file. `.env` is local and ignored by Git; `.env.example` documents the inference settings for later parts.
+Open <http://127.0.0.1:3001>. Port 3000 is occupied by another local app on this Mac. Paper Radar creates `data/paper-radar.sqlite` and applies migrations automatically; `db:init` lets you do that explicitly. No inference PC is needed for the query preview. Set `DATABASE_PATH` to use another SQLite file. `.env` is local and ignored by Git; `.env.example` documents the paper source, optional search keys, and the inference settings for later parts.
 
 Create two topics using the form. The first can use the example in [the PRD](docs/Paper_Radar_PRD.md). Enter each interest in its own box and use **Add interest** for another; non-interests work the same way and are optional. Open a topic to inspect its fields, edit it, refresh, and restart the app to confirm persistence. Try a blank name and a blank interests box to see validation errors. Delete the second topic using the confirmation prompt; the first remains.
 
@@ -32,6 +32,36 @@ context management for long-horizon coding agents
 ```
 
 To verify, create or edit a topic to match the PRD example, open its page, and compare the preview with this list. Refresh and reopen it to confirm the order. Add `workflow repair` as a sixth interest; `coding agents workflow repair` should appear. Change `parallel branches` in the question to `parallel workflows`; the question query should change accordingly. Change the description's opening clause and check the final query. Repeated interests, extra whitespace, and trailing punctuation should add no empty or duplicate queries. Review whether the searches describe your topic before approving discovery work. Previously saved comma-separated interests remain in one box until you split them into separate boxes and save.
+
+## Discovery
+
+Open a topic and select **Discover papers**. Paper Radar runs each preview query against the configured paper source, asking for `ceil(50 / number of queries)` results per query. It keeps at most 50 new unique papers per run and skips remaining queries once it reaches that number. Each query's papers and topic associations are saved as soon as that query finishes, so a later failure or a stopped app keeps earlier results. OpenAlex sometimes lists one paper under several IDs; repeated titles within one response are dropped. A paper appears once globally and once per topic; running discovery again adds only papers the topic does not already have. Papers without abstracts stay in the list, marked as unclassified.
+
+The page shows the last run: each query's status, how many results Semantic Scholar returned, how many papers were new, and an explanation when the topic has fewer than 20 candidates. Rate-limit (HTTP 429) and server errors are retried at most 3 times, waiting for `Retry-After` when the source sends it and 2, 4, then 8 seconds otherwise. After a query exhausts its retries on a rate limit, the rest of that run is skipped rather than retried. Run discovery again later to retry.
+
+`PAPER_SOURCE` selects the source; restart the app after changing it.
+
+- `openalex` (default) uses OpenAlex semantic search (`search.semantic`), which ranks by meaning rather than exact keywords and returns at most 50 results per query. Links go to the DOI when one exists, otherwise the OpenAlex page. Without a key, OpenAlex allows about $0.10 of usage per day at $0.001 per search, roughly 100 searches or a dozen discovery runs. A free account at <https://openalex.org> gives a key with $1 per day (about 1,000 searches); set it as `OPENALEX_API_KEY` in `.env` and restart the app.
+- `semantic-scholar` uses Semantic Scholar's relevance search. Without a key, requests share a public rate limit and frequently fail with HTTP 429. Request a key at <https://www.semanticscholar.org/product/api#api-key-form> and set `SEMANTIC_SCHOLAR_API_KEY`.
+
+Papers from the two sources have different IDs, so switching sources can list the same paper twice for a topic. Use a fresh `DATABASE_PATH` when switching if that matters. Requests in a run are spaced at least 1.1 seconds apart.
+
+### Verification fixture
+
+These commands use canned search responses and a separate database. They refuse to run unless `DATABASE_PATH` points somewhere other than `data/paper-radar.sqlite`.
+
+```sh
+export DATABASE_PATH=data/verify.sqlite
+npm run fixture:discovery -- setup    # Fixture A and B share one paper; A has one paper without an abstract
+npm run fixture:discovery -- check    # read-only: expect 1 row and 2 associations for fixture-shared, 0 duplicate pairs
+npm run fixture:discovery -- partial  # A's second query fails after the first succeeded
+npm run dev                           # inspect Fixture A, stop, start again: earlier papers and the failed query remain
+npm run fixture:discovery -- retry    # the failed query succeeds; the other queries add nothing
+npm run fixture:discovery -- check    # still 0 duplicate pairs; Fixture A has 10 candidates, Fixture B has 4
+unset DATABASE_PATH
+```
+
+Fixture links point to `example.org` and are not real papers. To start over, stop the app and delete `data/verify.sqlite`.
 
 ## Back up and restore
 

@@ -1,7 +1,10 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getDatabase } from '../lib/db.ts';
+import { discoverPapers } from '../lib/discovery.ts';
+import { createSearch } from '../lib/paper-search.ts';
 import { createTopic, deleteTopic, inputFrom, updateTopic, ValidationError, type TopicInput } from '../lib/topics.ts';
 
 export type FormState = { errors?: Partial<Record<keyof TopicInput, string>>; values?: TopicInput; message?: string };
@@ -32,4 +35,9 @@ export async function updateTopicAction(id: string, _state: FormState, formData:
 export async function deleteTopicAction(id: string, _formData: FormData) {
   deleteTopic(getDatabase(), id);
   redirect('/');
+}
+
+export async function discoverAction(id: string, _formData: FormData) {
+  if (!await discoverPapers(getDatabase(), id, createSearch())) redirect('/');
+  revalidatePath(`/topics/${id}`);
 }
