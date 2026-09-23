@@ -14,7 +14,7 @@ npm run dev
 
 Open <http://127.0.0.1:3001>. Port 3000 is occupied by another local app on this Mac. Paper Radar creates `data/paper-radar.sqlite` and applies migrations automatically; `db:init` lets you do that explicitly. No inference PC is needed for the query preview. Set `DATABASE_PATH` to use another SQLite file. `.env` is local and ignored by Git; `.env.example` documents the inference settings for later parts.
 
-Create two topics using the form. The first can use the example in [the PRD](Paper_Radar_PRD.md). Open a topic to inspect its fields, edit it, refresh, and restart the app to confirm persistence. Try a blank name and a blank interests box to see validation errors. Delete the second topic using the confirmation prompt; the first remains.
+Create two topics using the form. The first can use the example in [the PRD](Paper_Radar_PRD.md). Enter each interest in its own box and use **Add interest** for another; non-interests work the same way and are optional. Open a topic to inspect its fields, edit it, refresh, and restart the app to confirm persistence. Try a blank name and a blank interests box to see validation errors. Delete the second topic using the confirmation prompt; the first remains.
 
 ## Query preview
 
@@ -31,7 +31,7 @@ coding agents parallel branches
 context management for long-horizon coding agents
 ```
 
-To verify, create or edit a topic to match the PRD example, open its page, and compare the preview with this list. Refresh and reopen it to confirm the order. Add `workflow repair` as a sixth interest; `coding agents workflow repair` should appear. Change `parallel branches` in the question to `parallel workflows`; the question query should change accordingly. Change the description's opening clause and check the final query. Repeated interests, extra whitespace, and trailing punctuation should add no empty or duplicate queries. Review whether the searches describe your topic before approving discovery work.
+To verify, create or edit a topic to match the PRD example, open its page, and compare the preview with this list. Refresh and reopen it to confirm the order. Add `workflow repair` as a sixth interest; `coding agents workflow repair` should appear. Change `parallel branches` in the question to `parallel workflows`; the question query should change accordingly. Change the description's opening clause and check the final query. Repeated interests, extra whitespace, and trailing punctuation should add no empty or duplicate queries. Review whether the searches describe your topic before approving discovery work. Previously saved comma-separated interests remain in one box until you split them into separate boxes and save.
 
 ## Back up and restore
 

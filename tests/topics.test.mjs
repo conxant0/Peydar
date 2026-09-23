@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { openDatabase } from '../src/lib/db.ts';
-import { createTopic, deleteTopic, getTopic, listTopics, updateTopic, ValidationError } from '../src/lib/topics.ts';
+import { createTopic, deleteTopic, getTopic, inputFrom, listTopics, updateTopic, ValidationError } from '../src/lib/topics.ts';
 
 const example = {
   name: 'Branch-Aware Context Management',
@@ -13,6 +13,17 @@ const example = {
   interests: 'coding agents\ncontext management',
   nonInterests: 'generic RAG',
 };
+
+test('separate interest inputs submit every phrase in order', () => {
+  const form = new FormData();
+  form.set('name', example.name);
+  form.set('question', example.question);
+  form.set('description', example.description);
+  form.append('interests', 'coding agents');
+  form.append('interests', 'context management');
+  form.append('nonInterests', '');
+  assert.deepEqual(inputFrom(form), { ...example, nonInterests: '' });
+});
 
 test('topics persist, validate, isolate, and revise only for substantive edits', () => {
   const dir = mkdtempSync(path.join(tmpdir(), 'paper-radar-'));

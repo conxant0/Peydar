@@ -30,6 +30,13 @@ h2 { font-size: 1.15rem; margin: 0 0 .7rem; }
 .back { display: inline-block; margin-bottom: 2rem; }
 .topic-form { padding: 1.5rem; margin-top: 2rem; }
 .field { margin-bottom: 1.2rem; }
+.phrase-fields { border: 0; padding: 0; margin: 0 0 1.2rem; min-width: 0; }
+.phrase-fields legend { font-weight: 650; padding: 0; margin-bottom: .35rem; }
+.phrase-fields .hint { margin: 0 0 .65rem; }
+.phrase-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
+.phrase-row input { flex: 1; min-width: 0; }
+.secondary { background: white; color: #11685c; border-color: #9baea9; padding: .45rem .7rem; }
+.secondary:hover { background: #edf5f2; }
 label { display: block; font-weight: 650; margin-bottom: .35rem; }
 input, textarea { width: 100%; border: 1px solid #9baea9; border-radius: 7px; padding: .65rem .75rem; background: white; color: inherit; }
 textarea { resize: vertical; }

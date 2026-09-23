@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { FormState } from './actions.ts';
 import type { TopicInput } from '../lib/topics.ts';
@@ -8,6 +8,45 @@ import type { TopicInput } from '../lib/topics.ts';
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return <button type="submit" disabled={pending}>{pending ? 'Saving…' : label}</button>;
+}
+
+function PhraseFields({ name, title, initial = '', error }: {
+  name: 'interests' | 'nonInterests';
+  title: string;
+  initial?: string;
+  error?: string;
+}) {
+  const [items, setItems] = useState(() => initial ? initial.split('\n') : ['']);
+  const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const focusIndex = useRef<number | null>(null);
+  useEffect(() => {
+    if (focusIndex.current !== null) inputs.current[focusIndex.current]?.focus();
+    focusIndex.current = null;
+  }, [items.length]);
+  const singular = name === 'interests' ? 'Interest' : 'Non-interest';
+  return <fieldset className="phrase-fields">
+    <legend>{title}</legend>
+    <p className="hint">One phrase per box. Use Add {singular.toLowerCase()} for another.</p>
+    {items.map((item, index) => <div className="phrase-row" key={index}>
+      <input name={name} type="text" value={item} ref={(element) => { inputs.current[index] = element; }}
+        aria-label={`${singular} ${index + 1}`}
+        aria-invalid={!!error} aria-describedby={error ? `${name}-error` : undefined}
+        onChange={(event) => {
+          const next = event.target.value;
+          setItems((current) => current.map((value, position) => position === index ? next : value));
+        }} />
+      {items.length > 1 && <button type="button" className="secondary" onClick={() => {
+        focusIndex.current = Math.min(index, items.length - 2);
+        setItems((current) => current.filter((_, position) => position !== index));
+      }}
+        aria-label={`Remove ${singular.toLowerCase()} ${index + 1}`}>Remove</button>}
+    </div>)}
+    <button type="button" className="secondary" onClick={() => {
+      focusIndex.current = items.length;
+      setItems((current) => [...current, '']);
+    }}>Add {singular.toLowerCase()}</button>
+    {error && <p className="error" id={`${name}-error`}>{error}</p>}
+  </fieldset>;
 }
 
 export default function TopicForm({
@@ -37,9 +76,8 @@ export default function TopicForm({
     {field('name', 'Topic name', false, true)}
     {field('question', 'Research question', false, true)}
     {field('description', 'Description', true)}
-    {field('interests', 'Interests', true)}
-    {field('nonInterests', 'Non-interests', true)}
-    <p className="hint">Put one interest or non-interest on each line. Non-interests can be blank.</p>
+    <PhraseFields name="interests" title="Interests" initial={values?.interests} error={state.errors?.interests} />
+    <PhraseFields name="nonInterests" title="Non-interests (optional)" initial={values?.nonInterests} error={state.errors?.nonInterests} />
     <SubmitButton label={label} />
   </form>;
 }

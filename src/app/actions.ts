@@ -2,23 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import { getDatabase } from '../lib/db.ts';
-import { createTopic, deleteTopic, updateTopic, ValidationError, type TopicInput } from '../lib/topics.ts';
+import { createTopic, deleteTopic, inputFrom, updateTopic, ValidationError, type TopicInput } from '../lib/topics.ts';
 
 export type FormState = { errors?: Partial<Record<keyof TopicInput, string>>; values?: TopicInput; message?: string };
-
-function inputFrom(formData: FormData): TopicInput {
-  const value = (name: string) => {
-    const field = formData.get(name);
-    return typeof field === 'string' ? field : '';
-  };
-  return {
-    name: value('name'),
-    question: value('question'),
-    description: value('description'),
-    interests: value('interests'),
-    nonInterests: value('nonInterests'),
-  };
-}
 
 export async function createTopicAction(_state: FormState, formData: FormData): Promise<FormState> {
   const values = inputFrom(formData);

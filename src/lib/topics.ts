@@ -41,6 +41,21 @@ export class ValidationError extends Error {
   }
 }
 
+export function inputFrom(formData: FormData): TopicInput {
+  const value = (name: string) => {
+    const field = formData.get(name);
+    return typeof field === 'string' ? field : '';
+  };
+  const list = (name: string) => formData.getAll(name).filter((field): field is string => typeof field === 'string').join('\n');
+  return {
+    name: value('name'),
+    question: value('question'),
+    description: value('description'),
+    interests: list('interests'),
+    nonInterests: list('nonInterests'),
+  };
+}
+
 function normalize(input: TopicInput) {
   const name = input.name.trim();
   const question = input.question.trim();
